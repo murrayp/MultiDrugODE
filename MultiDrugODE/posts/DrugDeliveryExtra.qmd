@@ -8,13 +8,11 @@ filters:
 
 # Pharmaco-kinetic modelling 
 
+Assumptions:
 
-We can use calculus to study how to optimise drug delivery. 
-
-Suppose you are working as part of a team who are designing clinical trials for a drug. It is proposed that patients will orally ingest the drug at a number of times every day. The delivery protocol needs to be optimised so that the drug concentration is as smooth as possible whilst maintaining the total dose constant.
-
-A first proposal is that the patient will take the drug 12 units of the drug once per day. 
-
+* Drug has a specified half life
+* The drug is orally ingested three times per day at specified concentrations
+* The release into the blood stream has an associated  timescale ('Source time scale') such that the time of peak blood concentration lags the ingestion time.
 
 
 ## Model development
@@ -25,7 +23,7 @@ Suppose that the drug has a half-life of 6 hours and that at some set of times, 
 
 Consider the model
 $$
-\frac{dC}{dt}=-kC+\sum_i c_i \f(t,t_i), \quad N(0)=0.
+\frac{dC}{dt}=-kC+\sum_i c_i f(t,t_i), \quad N(0)=0.
 $$
 
 The first term describes the linear degradation of the drug. The second term represent the delivery of drug at a prescribed set of times.
@@ -40,8 +38,14 @@ $$
 
 $C_{max}$ refers to the maximum concentration experienced by the patient.
 
-In the merged tab the a weighed sum of drug profiles is plotted.
+In the merged tab, a weighted sum of drug profiles is plotted.
 
+
+To calibrate:
+
+* Set the half-life to known value.
+* Set all but one concentrations to zero.
+* Identify the value of 'Source Time Sc.' so that the time from ingestion to peak is consistent with expected kinetics.
 
 
 ::: {#fig-popmodel}
@@ -66,14 +70,15 @@ app_ui = ui.page_fluid(
 
     ui.layout_sidebar(
         ui.sidebar(
-    ui.input_slider(id="k",label="Drug half life (h)",min=1,max=12,value=6,step=1),
+    ui.input_slider(id="drug_half_life_1",label="Drug half life (h)",min=1,max=12,value=6,step=1),
+    ui.input_slider(id="source_time_scale_1",label="Source Time Sc (h)",min=0.0,max=12.0,value=4.0,step=0.1),
     ui.input_slider(id="t1",label="First time (h)",min=0.0,max=10.0,value=7.0,step=1.0),
     ui.input_slider(id="t2",label="Second time (h)",min=10.0,max=18.0,value=12.0,step=1.0),
-    ui.input_slider(id="t3",label="Third time (h)",min=17.0,max=22.0,value=18.0,step=1.0),
-    ui.input_slider(id="c1",label="First conc.",min=0.0,max=12.0,value=4.0,step=1.0),
-    ui.input_slider(id="c2",label="Second conc.",min=0.0,max=12.0,value=4.0,step=1.0),
-    ui.input_slider(id="c3",label="Third conc.",min=0.0,max=12.0,value=4.0,step=1.0),
-    ui.input_slider(id="source_timescale",label="Source Time Sc.",min=0.0,max=12.0,value=4.0,step=0.1),      
+    ui.input_slider(id="t3",label="Third time (h)",min=17.0,max=22.0,value=24.0,step=1.0),
+    ui.input_slider(id="c1",label="First conc.",min=0.0,max=20.0,value=4.0,step=1.0),
+    ui.input_slider(id="c2",label="Second conc.",min=0.0,max=20.0,value=4.0,step=1.0),
+    ui.input_slider(id="c3",label="Third conc.",min=0.0,max=20.0,value=4.0,step=1.0),
+          
             ),
 
         ui.output_plot("plot"),
@@ -84,14 +89,15 @@ app_ui = ui.page_fluid(
 
     ui.layout_sidebar(
         ui.sidebar(
-    ui.input_slider(id="k_2",label="Drug half life (h)",min=1,max=12,value=6,step=1),
+    ui.input_slider(id="drug_half_life_2",label="Drug half life (h)",min=1,max=12,value=6,step=1),
+    ui.input_slider(id="source_time_scale_2",label="Source Time Sc. (h)",min=0.0,max=12.0,value=4.0,step=0.1),      
     ui.input_slider(id="t1_2",label="First time (h)",min=0.0,max=10.0,value=7.0,step=1.0),
     ui.input_slider(id="t2_2",label="Second time (h)",min=10.0,max=18.0,value=12.0,step=1.0),
-    ui.input_slider(id="t3_2",label="Third time (h)",min=17.0,max=22.0,value=18.0,step=1.0),
-    ui.input_slider(id="c1_2",label="First conc.",min=0.0,max=12.0,value=4.0,step=1.0),
-    ui.input_slider(id="c2_2",label="Second conc.",min=0.0,max=12.0,value=4.0,step=1.0),
-    ui.input_slider(id="c3_2",label="Third conc.",min=0.0,max=12.0,value=4.0,step=1.0),
-    ui.input_slider(id="source_timescale_2",label="Source Time Sc.",min=0.0,max=12.0,value=4.0,step=0.1),      
+    ui.input_slider(id="t3_2",label="Third time (h)",min=17.0,max=22.0,value=24.0,step=1.0),
+    ui.input_slider(id="c1_2",label="First conc.",min=0.0,max=20.0,value=4.0,step=1.0),
+    ui.input_slider(id="c2_2",label="Second conc.",min=0.0,max=20.0,value=4.0,step=1.0),
+    ui.input_slider(id="c3_2",label="Third conc.",min=0.0,max=20.0,value=4.0,step=1.0),
+    
             ),
 
         ui.output_plot("plot_drug2"),
@@ -120,7 +126,7 @@ app_ui = ui.page_fluid(
 
 def server(input, output, session):
 
-    def rhs_pop_model(x,t,drug_decay_rate,drug_conc_source,k_source_rate,t_0):
+    def rhs_pop_model(x,t,k_source_rate,drug_decay_rate,t_0,drug_conc_source):
           rhs=np.zeros_like(x,dtype=float)
           source_term=0.0
           for i in range(len(t_0)):
@@ -129,80 +135,85 @@ def server(input, output, session):
           rhs[0]=source_term-drug_decay_rate*N
           return rhs
 
-    def ComputeModelSolution(drug_half_life,t1,t2,t3,c1,c2,c3,drug_decay_rate,source_time_scale,k_source_rate):
+    def ComputeModelSolution(k_source_rate,drug_decay_rate,t_sort_day,drug_conc_day):
         # Define rhs of LV ODEs
-        
-
-        drug_conc_day=[c1,c2,c3]
-        t_sort_day=[t1,t2,t3]
+    
         drug_conc=[]
         t_sort=[]
         Cmax=0.0
         for i in range(num_days):
-            drug_conc=drug_conc+drug_conc_day
+            drug_conc_day_i=[x for x in drug_conc_day]
             t_sort_day_i = [x + i*24.0 for x in t_sort_day]
             t_sort=t_sort+t_sort_day_i
+            drug_conc=drug_conc+drug_conc_day_i
         
         t_sort.append(T_final)        
         N_0=0.0
         AUC=0.0
-        t_1=[]
-        N_1=[]
-        for i in range(1,len(t_sort)-1):
+        t_sol_1=[]
+        N_sol_1=[]
+        for i in range(0,len(t_sort)-1):
         # Define discretised t domain
             t = np.linspace(t_sort[i], t_sort[i+1], 1000)
 
             # define initial conditions
             init_cond=[N_0]
+            #assert(np.min(t)>np.max(t_sort[0:i]))
             # Compute numerical solution of ODEs
-            sol1 = odeint(rhs_pop_model, init_cond,t,args=(drug_decay_rate,drug_conc[0:i],k_source_rate,t_sort[0:i]))
+            sol1 = odeint(rhs_pop_model,init_cond,t,args=(k_source_rate,drug_decay_rate,t_sort[0:i+1],drug_conc[0:i+1]))
 
             # Plot results
             N=sol1[:,0]
             N_0=N[-1]
             N_0=N_0
-            t_1=t_1+list(t)
-            N_1=N_1+list(N)
+            t_sol_1=t_sol_1+list(t)
+            N_sol_1=N_sol_1+list(N)
             #ax.plot(t, N,'b')
             AUC=AUC+simpson(N, x=t)
             Cmax=np.max([Cmax,np.max(N)])
-        return t_1,N_1,AUC,Cmax
+        return t_sol_1,N_sol_1,AUC,Cmax
 
     T_final=96
     num_days=int(T_final/24)
     
     @reactive.calc
     def Drug1Compute():
-        drug_half_life=float(input.k())
+        drug_half_life_1=float(input.drug_half_life_1())
         t1=float(input.t1())
         t2=float(input.t2())
         t3=float(input.t3())
         c1=float(input.c1())
         c2=float(input.c2())
         c3=float(input.c3())
+        source_time_scale_1=float(input.source_time_scale_1())
 
-        drug_decay_rate=np.log(2)/drug_half_life
-        source_time_scale=float(input.source_timescale())
-        k_source_rate= np.log(2)/source_time_scale    
+        drug_decay_rate_1=np.log(2)/drug_half_life_1
+        k_source_rate= np.log(2)/source_time_scale_1   
 
-        t_1,N_1,AUC,Cmax=ComputeModelSolution(drug_half_life,t1,t2,t3,c1,c2,c3,drug_decay_rate,source_time_scale,k_source_rate)
+        drug_conc_day=[c1,c2,c3]
+        t_sort_day=[t1,t2,t3] 
+
+        t_1,N_1,AUC,Cmax=ComputeModelSolution(k_source_rate,drug_decay_rate_1,t_sort_day,drug_conc_day)
         return t_1,N_1,AUC,Cmax
 
     @reactive.calc
     def Drug2Compute():
-        drug_half_life_2=float(input.k_2())
+        drug_half_life_2=float(input.drug_half_life_2())
         t1_2=float(input.t1_2())
         t2_2=float(input.t2_2())
         t3_2=float(input.t3_2())
         c1_2=float(input.c1_2())
         c2_2=float(input.c2_2())
         c3_2=float(input.c3_2())
+        source_time_scale_2=float(input.source_time_scale_2())
 
         drug_decay_rate_2=np.log(2)/drug_half_life_2
-        source_time_scale_2=float(input.source_timescale_2())
         k_source_rate_2= np.log(2)/source_time_scale_2   
 
-        t_2,N_2,AUC_2,Cmax_2=ComputeModelSolution(drug_half_life_2,t1_2,t2_2,t3_2,c1_2,c2_2,c3_2,drug_decay_rate_2,source_time_scale_2,k_source_rate_2)
+        drug_conc_day_2=[c1_2,c2_2,c3_2]
+        t_sort_day_2=[t1_2,t2_2,t3_2] 
+
+        t_2,N_2,AUC_2,Cmax_2=ComputeModelSolution(k_source_rate_2,drug_decay_rate_2,t_sort_day_2,drug_conc_day_2)
         return t_2,N_2,AUC_2,Cmax_2
 
     @render.plot
