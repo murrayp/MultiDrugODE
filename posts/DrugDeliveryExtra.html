@@ -174,15 +174,18 @@ window.Quarto = {
 
 <section id="pharmaco-kinetic-modelling" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Pharmaco-kinetic modelling</h1>
-<p>We can use calculus to study how to optimise drug delivery.</p>
-<p>Suppose you are working as part of a team who are designing clinical trials for a drug. It is proposed that patients will orally ingest the drug at a number of times every day. The delivery protocol needs to be optimised so that the drug concentration is as smooth as possible whilst maintaining the total dose constant.</p>
-<p>A first proposal is that the patient will take the drug 12 units of the drug once per day.</p>
+<p>Assumptions:</p>
+<ul>
+<li>Drug has a specified half life</li>
+<li>The drug is orally ingested three times per day at specified concentrations</li>
+<li>The release into the blood stream has an associated timescale (‘Source time scale’) such that the time of peak blood concentration lags the ingestion time.</li>
+</ul>
 <section id="model-development" class="level2" data-number="1.1">
 <h2 data-number="1.1" class="anchored" data-anchor-id="model-development"><span class="header-section-number">1.1</span> Model development</h2>
 <p>Let <span class="math inline">\(t\)</span> represent time and <span class="math inline">\(C(t)\)</span> represent the drug concentration in the blood stream.</p>
 <p>Suppose that the drug has a half-life of 6 hours and that at some set of times, <span class="math inline">\(\{t_i\}\)</span>, a concentration of drug <span class="math inline">\(c_i\)</span> is delivered to a patient.</p>
 <p>Consider the model <span class="math display">\[
-\frac{dC}{dt}=-kC+\sum_i c_i \f(t,t_i), \quad N(0)=0.
+\frac{dC}{dt}=-kC+\sum_i c_i f(t,t_i), \quad N(0)=0.
 \]</span></p>
 <p>The first term describes the linear degradation of the drug. The second term represent the delivery of drug at a prescribed set of times.</p>
 <p>In <a href="#fig-popmodel" class="quarto-xref">Figure&nbsp;1</a> you can explore the effect of different treatment protocols.</p>
@@ -191,7 +194,7 @@ window.Quarto = {
 AUC=\int_0^T C(t)dt.
 \]</span></p>
 <p><span class="math inline">\(C_{max}\)</span> refers to the maximum concentration experienced by the patient.</p>
-<p>In the merged tab the a weighed sum of drug profiles is plotted.</p>
+<p>In the merged tab, a weighted sum of drug profiles is plotted.</p>
 <div id="fig-popmodel" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-popmodel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
