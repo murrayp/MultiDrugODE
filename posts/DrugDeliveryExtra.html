@@ -227,13 +227,14 @@ app_ui = ui.page_fluid(
     ui.layout_sidebar(
         ui.sidebar(
     ui.input_slider(id="drug_half_life_1",label="Drug half life (h)",min=1,max=12,value=6,step=1),
+    ui.input_slider(id="source_time_scale_1",label="Source Time Sc (h)",min=0.0,max=12.0,value=4.0,step=0.1),
     ui.input_slider(id="t1",label="First time (h)",min=0.0,max=10.0,value=7.0,step=1.0),
     ui.input_slider(id="t2",label="Second time (h)",min=10.0,max=18.0,value=12.0,step=1.0),
     ui.input_slider(id="t3",label="Third time (h)",min=17.0,max=22.0,value=24.0,step=1.0),
     ui.input_slider(id="c1",label="First conc.",min=0.0,max=20.0,value=4.0,step=1.0),
     ui.input_slider(id="c2",label="Second conc.",min=0.0,max=20.0,value=4.0,step=1.0),
     ui.input_slider(id="c3",label="Third conc.",min=0.0,max=20.0,value=4.0,step=1.0),
-    ui.input_slider(id="source_time_scale_1",label="Source Time Sc (h)",min=0.0,max=12.0,value=4.0,step=0.1),      
+          
             ),
 
         ui.output_plot("plot"),
@@ -245,13 +246,14 @@ app_ui = ui.page_fluid(
     ui.layout_sidebar(
         ui.sidebar(
     ui.input_slider(id="drug_half_life_2",label="Drug half life (h)",min=1,max=12,value=6,step=1),
+    ui.input_slider(id="source_time_scale_2",label="Source Time Sc. (h)",min=0.0,max=12.0,value=4.0,step=0.1),      
     ui.input_slider(id="t1_2",label="First time (h)",min=0.0,max=10.0,value=7.0,step=1.0),
     ui.input_slider(id="t2_2",label="Second time (h)",min=10.0,max=18.0,value=12.0,step=1.0),
     ui.input_slider(id="t3_2",label="Third time (h)",min=17.0,max=22.0,value=24.0,step=1.0),
     ui.input_slider(id="c1_2",label="First conc.",min=0.0,max=20.0,value=4.0,step=1.0),
     ui.input_slider(id="c2_2",label="Second conc.",min=0.0,max=20.0,value=4.0,step=1.0),
     ui.input_slider(id="c3_2",label="Third conc.",min=0.0,max=20.0,value=4.0,step=1.0),
-    ui.input_slider(id="source_time_scale_2",label="Source Time Sc. (h)",min=0.0,max=12.0,value=4.0,step=0.1),      
+    
             ),
 
         ui.output_plot("plot_drug2"),
