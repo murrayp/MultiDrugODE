@@ -1,0 +1,301 @@
+---
+title: "Modelling drug delivery"
+format: html 
+number-sections: true
+filters:
+  - shinylive
+---
+
+# Pharmaco-kinetic modelling 
+
+
+We can use calculus to study how to optimise drug delivery. 
+
+Suppose you are working as part of a team who are designing clinical trials for a drug. It is proposed that patients will orally ingest the drug at a number of times every day. The delivery protocol needs to be optimised so that the drug concentration is as smooth as possible whilst maintaining the total dose constant.
+
+A first proposal is that the patient will take the drug 12 units of the drug once per day. 
+
+
+
+## Model development
+Let $t$ represent time and $C(t)$ represent the drug concentration in the blood stream. 
+
+Suppose that the drug has a half-life of 6 hours and that at some set of times, $\{t_i\}$, a concentration of drug $c_i$ is delivered to a patient. 
+
+
+Consider the model
+$$
+\frac{dC}{dt}=-kC+\sum_i c_i \f(t,t_i), \quad N(0)=0.
+$$
+
+The first term describes the linear degradation of the drug. The second term represent the delivery of drug at a prescribed set of times.
+
+In @fig-popmodel you can explore the effect of different treatment protocols. 
+
+The AUC refers to the area under the curve. This is a metric used to calculate the total dosage delivered to the patient. It is just the integral
+
+$$
+AUC=\int_0^T C(t)dt.
+$$
+
+$C_{max}$ refers to the maximum concentration experienced by the patient.
+
+In the merged tab the a weighed sum of drug profiles is plotted.
+
+
+
+::: {#fig-popmodel}
+
+```{shinylive-python}
+#| standalone: true
+#| components: [viewer]
+#| viewerHeight: 500
+
+from shiny import App, Inputs, Outputs, Session, render, ui
+from shiny import reactive
+
+import numpy as np
+from pathlib import Path
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint
+from scipy.integrate import simpson
+
+app_ui = ui.page_fluid(
+    ui.navset_tab(
+    ui.nav_panel("Drug 1",
+
+    ui.layout_sidebar(
+        ui.sidebar(
+    ui.input_slider(id="k",label="Drug half life (h)",min=1,max=12,value=6,step=1),
+    ui.input_slider(id="t1",label="First time (h)",min=0.0,max=10.0,value=7.0,step=1.0),
+    ui.input_slider(id="t2",label="Second time (h)",min=10.0,max=18.0,value=12.0,step=1.0),
+    ui.input_slider(id="t3",label="Third time (h)",min=17.0,max=22.0,value=18.0,step=1.0),
+    ui.input_slider(id="c1",label="First conc.",min=0.0,max=12.0,value=4.0,step=1.0),
+    ui.input_slider(id="c2",label="Second conc.",min=0.0,max=12.0,value=4.0,step=1.0),
+    ui.input_slider(id="c3",label="Third conc.",min=0.0,max=12.0,value=4.0,step=1.0),
+    ui.input_slider(id="source_timescale",label="Source Time Sc.",min=0.0,max=12.0,value=4.0,step=0.1),      
+            ),
+
+        ui.output_plot("plot"),
+    ),
+    ),
+
+    ui.nav_panel("Drug 2",
+
+    ui.layout_sidebar(
+        ui.sidebar(
+    ui.input_slider(id="k_2",label="Drug half life (h)",min=1,max=12,value=6,step=1),
+    ui.input_slider(id="t1_2",label="First time (h)",min=0.0,max=10.0,value=7.0,step=1.0),
+    ui.input_slider(id="t2_2",label="Second time (h)",min=10.0,max=18.0,value=12.0,step=1.0),
+    ui.input_slider(id="t3_2",label="Third time (h)",min=17.0,max=22.0,value=18.0,step=1.0),
+    ui.input_slider(id="c1_2",label="First conc.",min=0.0,max=12.0,value=4.0,step=1.0),
+    ui.input_slider(id="c2_2",label="Second conc.",min=0.0,max=12.0,value=4.0,step=1.0),
+    ui.input_slider(id="c3_2",label="Third conc.",min=0.0,max=12.0,value=4.0,step=1.0),
+    ui.input_slider(id="source_timescale_2",label="Source Time Sc.",min=0.0,max=12.0,value=4.0,step=0.1),      
+            ),
+
+        ui.output_plot("plot_drug2"),
+    ),
+    ),
+
+    ui.nav_panel("Merge",
+
+    ui.layout_sidebar(
+        ui.sidebar(
+    ui.input_slider(id="weight_drug_1",label="Weight_1",min=0,max=12,value=1.0,step=0.05),
+     ui.input_slider(id="weight_drug_2",label="Weight_2",min=0.0,max=50.0,value=18.0,step=1),
+          
+            ),
+
+        ui.output_plot("plot_drug3"),
+    ),
+    ),
+
+
+
+    
+    ),
+)
+
+
+def server(input, output, session):
+
+    def rhs_pop_model(x,t,drug_decay_rate,drug_conc_source,k_source_rate,t_0):
+          rhs=np.zeros_like(x,dtype=float)
+          source_term=0.0
+          for i in range(len(t_0)):
+            source_term+=drug_conc_source[i]*np.exp(-k_source_rate*(t-t_0[i]))*k_source_rate
+          N=x[0]
+          rhs[0]=source_term-drug_decay_rate*N
+          return rhs
+
+    def ComputeModelSolution(drug_half_life,t1,t2,t3,c1,c2,c3,drug_decay_rate,source_time_scale,k_source_rate):
+        # Define rhs of LV ODEs
+        
+
+        drug_conc_day=[c1,c2,c3]
+        t_sort_day=[t1,t2,t3]
+        drug_conc=[]
+        t_sort=[]
+        Cmax=0.0
+        for i in range(num_days):
+            drug_conc=drug_conc+drug_conc_day
+            t_sort_day_i = [x + i*24.0 for x in t_sort_day]
+            t_sort=t_sort+t_sort_day_i
+        
+        t_sort.append(T_final)        
+        N_0=0.0
+        AUC=0.0
+        t_1=[]
+        N_1=[]
+        for i in range(1,len(t_sort)-1):
+        # Define discretised t domain
+            t = np.linspace(t_sort[i], t_sort[i+1], 1000)
+
+            # define initial conditions
+            init_cond=[N_0]
+            # Compute numerical solution of ODEs
+            sol1 = odeint(rhs_pop_model, init_cond,t,args=(drug_decay_rate,drug_conc[0:i],k_source_rate,t_sort[0:i]))
+
+            # Plot results
+            N=sol1[:,0]
+            N_0=N[-1]
+            N_0=N_0
+            t_1=t_1+list(t)
+            N_1=N_1+list(N)
+            #ax.plot(t, N,'b')
+            AUC=AUC+simpson(N, x=t)
+            Cmax=np.max([Cmax,np.max(N)])
+        return t_1,N_1,AUC,Cmax
+
+    T_final=96
+    num_days=int(T_final/24)
+    
+    @reactive.calc
+    def Drug1Compute():
+        drug_half_life=float(input.k())
+        t1=float(input.t1())
+        t2=float(input.t2())
+        t3=float(input.t3())
+        c1=float(input.c1())
+        c2=float(input.c2())
+        c3=float(input.c3())
+
+        drug_decay_rate=np.log(2)/drug_half_life
+        source_time_scale=float(input.source_timescale())
+        k_source_rate= np.log(2)/source_time_scale    
+
+        t_1,N_1,AUC,Cmax=ComputeModelSolution(drug_half_life,t1,t2,t3,c1,c2,c3,drug_decay_rate,source_time_scale,k_source_rate)
+        return t_1,N_1,AUC,Cmax
+
+    @reactive.calc
+    def Drug2Compute():
+        drug_half_life_2=float(input.k_2())
+        t1_2=float(input.t1_2())
+        t2_2=float(input.t2_2())
+        t3_2=float(input.t3_2())
+        c1_2=float(input.c1_2())
+        c2_2=float(input.c2_2())
+        c3_2=float(input.c3_2())
+
+        drug_decay_rate_2=np.log(2)/drug_half_life_2
+        source_time_scale_2=float(input.source_timescale_2())
+        k_source_rate_2= np.log(2)/source_time_scale_2   
+
+        t_2,N_2,AUC_2,Cmax_2=ComputeModelSolution(drug_half_life_2,t1_2,t2_2,t3_2,c1_2,c2_2,c3_2,drug_decay_rate_2,source_time_scale_2,k_source_rate_2)
+        return t_2,N_2,AUC_2,Cmax_2
+
+    @render.plot
+    def plot():
+        fig, ax = plt.subplots(figsize=(6,6))
+        
+        t_1,N_1,AUC,Cmax=Drug1Compute()  
+        
+        ax.plot(t_1,N_1)
+        ax.plot([24,24],[0,Cmax],'r--')
+        ax.plot([48,48],[0,Cmax],'r--')
+        ax.plot([72,72],[0,Cmax],'r--')
+
+        ax.set_xlabel('$t$ (h)')
+        ax.set_xticks([0,12,24,36,48,60,72])
+
+        ax.set_title('AUC = ' + str(int(AUC)) +', Cmax = ' + str(int(Cmax)))
+        
+        plt.grid()
+
+    
+
+    @render.plot
+    def plot_drug2():
+        fig_2, ax_2 = plt.subplots(figsize=(6,6))
+        
+        t_2,N_2,AUC_2,Cmax2=Drug2Compute()  
+
+
+        ax_2.plot(t_2, N_2,'b')
+
+        ax_2.plot([24,24],[0,Cmax2],'r--')
+        ax_2.plot([48,48],[0,Cmax2],'r--')
+        ax_2.plot([72,72],[0,Cmax2],'r--')
+
+        ax_2.set_xlabel('$t$ (h)')
+        ax_2.set_xticks([0,12,24,36,48,60,72])
+
+        ax_2.set_title('AUC = ' + str(int(AUC_2)) +', Cmax = ' + str(int(Cmax2)))
+        
+        plt.grid()
+
+    @render.plot
+    def plot_drug3():
+        fig_3, ax_3 = plt.subplots(3,1)
+        
+        t_1,N_1,AUC_1,Cmax1=Drug1Compute() 
+        t_2,N_2,AUC_2,Cmax2=Drug2Compute() 
+
+        weight_1=float(input.weight_drug_1())
+        weight_2=float(input.weight_drug_2())
+
+
+        ax_3[0].plot(t_1,N_1)  
+        ax_3[0].plot([24,24],[0,Cmax2],'r--')
+        ax_3[0].plot([48,48],[0,Cmax2],'r--')
+        ax_3[0].plot([72,72],[0,Cmax2],'r--')
+        ax_3[0].set_xlabel('$t$ (h)')
+        ax_3[0].set_xticks([0,12,24,36,48,60,72])
+        ax_3[0].set_title('Drug 1')
+
+
+        ax_3[1].plot(t_2,N_2)  
+        ax_3[1].plot([24,24],[0,Cmax2],'r--')
+        ax_3[1].plot([48,48],[0,Cmax2],'r--')
+        ax_3[1].plot([72,72],[0,Cmax2],'r--')
+        ax_3[1].set_xlabel('$t$ (h)')
+        ax_3[1].set_xticks([0,12,24,36,48,60,72])
+        ax_3[1].set_title('Drug 2')
+
+
+        ax_3[2].plot(t_1,weight_1*np.array(N_1)+weight_2*np.array(N_2))
+  
+        ax_3[2].plot([24,24],[0,Cmax2],'r--')
+        ax_3[2].plot([48,48],[0,Cmax2],'r--')
+        ax_3[2].plot([72,72],[0,Cmax2],'r--')
+
+        ax_3[2].set_xlabel('$t$ (h)')
+        ax_3[2].set_xticks([0,12,24,36,48,60,72])
+        ax_3[2].set_title('Weighted sum')
+
+     
+        plt.grid()
+
+
+    plt.show()
+
+    
+app = App(app_ui, server)
+```
+:::
+
+
+
+
+
